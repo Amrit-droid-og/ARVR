@@ -1,0 +1,96 @@
+body {
+    margin: 0;
+    font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: white;
+    background-color: black;
+    overflow: hidden;
+}
+
+.ui-overlay {
+    position: fixed;
+    top: 30px;
+    left: 30px;
+    z-index: 1000;
+    padding: 24px;
+    background: rgba(2, 11, 22, 0.6);
+    backdrop-filter: blur(15px);
+    border-radius: 16px;
+    border: 1px solid rgba(98, 150, 192, 0.3);
+    box-shadow: 0 0 20px rgba(98, 150, 192, 0.2);
+    pointer-events: none;
+    transition: all 0.5s ease;
+}
+
+.ui-overlay h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.ui-overlay p {
+    margin: 8px 0 0 0;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+a-scene {
+    cursor: crosshair;
+}
+
+/* High-premium Death Screen */
+.fullscreen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(139, 0, 0, 0.95);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    text-align: center;
+    animation: bloodFade 1s ease-out;
+}
+
+@keyframes bloodFade {
+    from { background: rgba(0,0,0,1); }
+    to { background: rgba(139, 0, 0, 0.95); }
+}
+
+.death-title {
+    font-size: 120px;
+    font-weight: 900;
+    color: white;
+    margin: 0;
+    letter-spacing: 12px;
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+}
+
+#death-explanation {
+    max-width: 600px;
+    font-size: 20px;
+    line-height: 1.6;
+    margin: 20px 0 40px 0;
+    opacity: 0.9;
+}
+
+.retry-btn {
+    padding: 16px 48px;
+    font-size: 18px;
+    font-weight: 700;
+    background: white;
+    color: darkred;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: all;
+}
+
+.retry-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.4);
+}
