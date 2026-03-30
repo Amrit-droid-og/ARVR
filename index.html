@@ -96,7 +96,7 @@
             },
             showDecisionUI: function() {
                 document.getElementById('kidnap-text').innerText = "It feels like danger here...";
-                document.getElementById('decision-menu').setAttribute('visible', 'true');
+                document.getElementById('choice-menu-html').style.display = 'flex';
                 // Stop the player from walking further
                 const walkingComp = this.rig.components['click-to-walk'];
                 if (walkingComp) walkingComp.isWalking = false;
@@ -104,7 +104,7 @@
             handleDecision: function(choice) {
                 if (choice === 3) {
                     // Correct Choice
-                    document.getElementById('decision-menu').setAttribute('visible', 'false');
+                    document.getElementById('choice-menu-html').style.display = 'none';
                     document.getElementById('kidnap-text').innerText = "Armed and ready.";
                     // Wait 2 seconds then proceed to house
                     setTimeout(() => {
@@ -119,6 +119,7 @@
                     
                     document.getElementById('death-explanation').innerText = explanation;
                     document.getElementById('dead-overlay').style.display = 'flex';
+                    document.getElementById('choice-menu-html').style.display = 'none';
                 }
             },
             setupHouseScene: function() {
@@ -301,41 +302,12 @@
 
         <a-entity id="rig" position="0 1.6 15" click-to-walk="speed: 0.12">
             <a-camera look-controls wasd-controls-enabled="false">
-                <a-cursor color="#FFFFFF" opacity="0.6" scale="0.4 0.4 0.4" raycaster="objects: .selectable"></a-cursor>
+                <a-cursor color="#FFFFFF" opacity="0.6" scale="0.4 0.4 0.4"></a-cursor>
                 <a-light type="spot" intensity="1" distance="15" angle="45" position="0 0 0"></a-light>
                 <!-- Blackout plane for kidnapping effect -->
                 <a-plane id="blackout" position="0 0 -0.1" width="1" height="1" 
                          material="color: #000; opacity: 0; transparent: true; shader: flat"
                          visible="true"></a-plane>
-
-                <!-- Decision UI (Floating in front) -->
-                <a-entity id="decision-menu" visible="false" position="0 0 -2">
-                    <a-text value="SURVIVAL OPTIONS" align="center" position="0 0.8 0" color="white" width="3"></a-text>
-                    
-                    <!-- Option 1: Run -->
-                    <a-entity class="selectable" position="0 0.4 0" 
-                              geometry="primitive: plane; width: 1.5; height: 0.3"
-                              material="color: #444; opacity: 0.8"
-                              onclick="makeChoice(1)">
-                        <a-text value="1. Run" align="center" color="white" width="2.5"></a-text>
-                    </a-entity>
-
-                    <!-- Option 2: Walk normally -->
-                    <a-entity class="selectable" position="0 0 0" 
-                              geometry="primitive: plane; width: 1.5; height: 0.3"
-                              material="color: #444; opacity: 0.8"
-                              onclick="makeChoice(2)">
-                        <a-text value="2. Walk normally" align="center" color="white" width="2.5"></a-text>
-                    </a-entity>
-
-                    <!-- Option 3: Pick up weapon -->
-                    <a-entity class="selectable" position="0 -0.4 0" 
-                              geometry="primitive: plane; width: 1.5; height: 0.3"
-                              material="color: #444; opacity: 0.8"
-                              onclick="makeChoice(3)">
-                        <a-text value="3. Pick up weapon" align="center" color="white" width="2.5"></a-text>
-                    </a-entity>
-                </a-entity>
             </a-camera>
         </a-entity>
 
@@ -347,6 +319,12 @@
         <h1>Night VR Forest</h1>
         <p>Timer: <span id="timer-val">0</span>s</p>
         <p id="kidnap-text">Something feels wrong...</p>
+
+        <div id="choice-menu-html" class="choice-container" style="display: none;">
+            <button onclick="makeChoice(1)" class="choice-btn">1. Run</button>
+            <button onclick="makeChoice(2)" class="choice-btn">2. Walk Normally</button>
+            <button onclick="makeChoice(3)" class="choice-btn">3. Pick up a Weapon</button>
+        </div>
     </div>
 
     <div id="dead-overlay" class="fullscreen-overlay">
