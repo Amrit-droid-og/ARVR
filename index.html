@@ -101,26 +101,155 @@
                 const walkingComp = this.rig.components['click-to-walk'];
                 if (walkingComp) walkingComp.isWalking = false;
             },
-            handleDecision: function(choice) {
-                if (choice === 3) {
-                    // Correct Choice
-                    document.getElementById('choice-menu-html').style.display = 'none';
-                    document.getElementById('kidnap-text').innerText = "Armed and ready.";
-                    // Wait 2 seconds then proceed to house
-                    setTimeout(() => {
-                        this.phase = 'BLACKOUT';
-                    }, 2000);
-                } else {
-                    // Dead
-                    this.phase = 'DEAD';
-                    const explanation = choice === 1 ? 
-                        "Running made you an easy target in the dark. You were caught from behind." : 
-                        "Walking normally ignored the threat. You were ambushed without a chance to defend.";
-                    
-                    document.getElementById('death-explanation').innerText = explanation;
-                    document.getElementById('dead-overlay').style.display = 'flex';
-                    document.getElementById('choice-menu-html').style.display = 'none';
+            handleDecision: function(choice, phase = 1) {
+                if (phase === 1) {
+                    if (choice === 3) {
+                        // Correct Choice: Pick up weapon
+                        document.getElementById('choice-menu-html').style.display = 'none';
+                        document.getElementById('kidnap-text').innerText = "You found a heavy stone.";
+                        document.getElementById('player-stone').setAttribute('visible', 'true');
+                        
+                        // Show next set of options after a short delay
+                        setTimeout(() => {
+                            document.getElementById('kidnap-text').innerText = "What's the next move?";
+                            this.showPhase2UI();
+                        }, 1500);
+                    } else {
+                        this.triggerDeath(choice === 1 ? 
+                            "Running made you an easy target in the dark. You were caught from behind." : 
+                            "Walking normally ignored the threat. You were ambushed without a chance to defend."
+                        );
+                    }
+                } else if (phase === 2) {
+                    if (choice === 3) {
+                        // Correct Choice: Call Police
+                        document.getElementById('choice-menu-phase2').style.display = 'none';
+                        document.getElementById('kidnap-text').innerText = "Calling 911...";
+                        document.getElementById('player-phone').setAttribute('visible', 'true');
+                        
+                        setTimeout(() => {
+                            document.getElementById('kidnap-text').innerText = "Almost there. Next?";
+                            this.showPhase3UI();
+                        }, 2000);
+                    } else {
+                        this.triggerDeath(choice === 1 ?
+                            "Messaging a friend took too long. The kidnapper attacked before they could even read it." :
+                            "Sharing location was useful, but not fast enough. You were taken before anyone could reach you."
+                        );
+                    }
+                } else if (phase === 3) {
+                    if (choice === 2) {
+                        // Correct Choice: Stay on line
+                        document.getElementById('choice-menu-phase3').style.display = 'none';
+                        document.getElementById('kidnap-text').innerText = "Someone's coming from behind!";
+                        
+                        // Start the confrontation
+                        this.startConfrontation();
+                    } else {
+                        this.triggerDeath(choice === 1 ?
+                            "Your friend couldn't help you over the phone. The kidnapper caught up." :
+                            "Walking silently made you look vulnerable. You were overpowered instantly."
+                        );
+                    }
+                } else if (phase === 4) {
+                    if (choice === 2) {
+                        // Correct Choice: Better Fight Sequence
+                        this.executeImprovedFight();
+                    } else {
+                        this.triggerDeath(choice === 1 ?
+                            "Waiting for help was too slow. They reached you before any backup could arrive." :
+                            "Getting beaten silently was fatal. You were knocked unconscious instantly."
+                        );
+                    }
+                } else if (phase === 5) {
+                    if (choice === 3) {
+                        // Correct Choice: Finish Game
+                        document.getElementById('choice-menu-phase5').style.display = 'none';
+                        document.getElementById('kidnap-text').innerText = "YOU SURVIVED.";
+                        this.showWinScreen();
+                    } else {
+                        this.triggerDeath(choice === 1 ?
+                            "Calling someone else wasted precious seconds. They caught you." :
+                            "Panicking caused you to freeze. You were taken."
+                        );
+                    }
                 }
+            },
+            executeImprovedFight: function() {
+                document.getElementById('choice-menu-phase4').style.display = 'none';
+                
+                const stone = document.getElementById('player-stone');
+                const kidnapper = document.getElementById('confrontation-kidnapper');
+                const rig = this.rig;
+                const blackout = this.blackout;
+
+                // 1. Strike + Flash
+                stone.setAttribute('animation__strike', 'property: position; to: 0 0.5 -1.5; dur: 150; easing: easeInQuad');
+                
+                setTimeout(() => {
+                    // 2. Impact Flash + Shake
+                    blackout.setAttribute('material', 'opacity', '0.8');
+                    setTimeout(() => blackout.setAttribute('material', 'opacity', '0'), 100);
+                    
+                    document.getElementById('kidnap-text').innerText = "POW!";
+                    rig.setAttribute('animation__shake', 'property: position; from: 0 1.6 0; to: 0.1 1.7 -0.1; dur: 40; loop: 6; dir: alternate');
+                    
+                    // 3. Stagger + Multi-rotations
+                    kidnapper.setAttribute('animation__knockback', 'property: position; to: 0 0.1 5; dur: 400; easing: easeOutQuad');
+                    kidnapper.setAttribute('animation__spin', 'property: rotation; to: -180 360 0; dur: 800');
+
+                    setTimeout(() => {
+                        document.getElementById('kidnap-text').innerText = "They're still trying to get up! QUICK!";
+                        this.showPhase5UI();
+                    }, 1500);
+                }, 150);
+            },
+            startConfrontation: function() {
+                const kidnapper = document.getElementById('confrontation-kidnapper');
+                const playerPos = this.rig.getAttribute('position');
+                const playerRot = this.rig.getAttribute('rotation');
+                
+                // FACE THE THREAT - Rotate player 180 degrees
+                this.rig.setAttribute('animation__turn', `property: rotation; to: 0 ${playerRot.y + 180} 0; dur: 500`);
+                
+                kidnapper.setAttribute('position', { x: playerPos.x, y: 0.1, z: playerPos.z - 10 });
+                kidnapper.setAttribute('visible', 'true');
+                
+                // Faster approach
+                kidnapper.setAttribute('animation__move', `property: position; to: ${playerPos.x} 0.1 ${playerPos.z - 1.5}; dur: 2000; easing: linear`);
+                // Running bob
+                kidnapper.setAttribute('animation__bob', 'property: position; from: 0 0.1 0; to: 0 0.3 0; dur: 200; loop: true; dir: alternate');
+                
+                setTimeout(() => {
+                    this.showPhase4UI();
+                }, 1000);
+            },
+            showWinScreen: function() {
+                const credits = document.getElementById('credits-overlay');
+                if (credits) credits.style.display = 'flex';
+                this.phase = 'FINISHED';
+            },
+            showPhase2UI: function() {
+                document.getElementById('choice-menu-phase2').style.display = 'flex';
+            },
+            showPhase3UI: function() {
+                document.getElementById('choice-menu-phase3').style.display = 'flex';
+            },
+            showPhase4UI: function() {
+                document.getElementById('choice-menu-phase4').style.display = 'flex';
+            },
+            showPhase5UI: function() {
+                document.getElementById('choice-menu-phase5').style.display = 'flex';
+            },
+            triggerDeath: function(explanation) {
+                this.phase = 'DEAD';
+                document.getElementById('death-explanation').innerText = explanation;
+                document.getElementById('dead-overlay').style.display = 'flex';
+                document.getElementById('choice-menu-html').style.display = 'none';
+                document.getElementById('choice-menu-phase2').style.display = 'none';
+                document.getElementById('choice-menu-phase3').style.display = 'none';
+                document.getElementById('choice-menu-phase4').style.display = 'none';
+                document.getElementById('choice-menu-phase5').style.display = 'none';
             },
             setupHouseScene: function() {
                 // Hide forest world
@@ -147,10 +276,10 @@
         });
 
         // Global decision handler
-        window.makeChoice = function(choice) {
+        window.makeChoice = function(choice, phase = 1) {
             const scene = document.querySelector('a-scene');
             if (scene && scene.components['kidnap-scene']) {
-                scene.components['kidnap-scene'].handleDecision(choice);
+                scene.components['kidnap-scene'].handleDecision(choice, phase);
             }
         };
 
@@ -263,6 +392,18 @@
         <a-plane id="road" mixin="road-material" rotation="-90 0 0" width="8" height="4000" position="0 0 0" receive-shadow></a-plane>
         <a-plane rotation="-90 0 0" width="0.1" height="4000" color="#FFD700" position="0 0.01 0" material="emissive: #FFD700; emissiveIntensity: 0.2"></a-plane>
 
+        <!-- New Confrontation Kidnapper (Dynamic Position) -->
+        <a-entity id="confrontation-kidnapper" visible="false">
+            <a-box width="0.7" height="1.0" depth="0.5" color="#111" position="0 1.0 0"></a-box> <!-- Torso -->
+            <a-box width="0.2" height="1.0" depth="0.2" position="-0.2 0.5 0" color="#111"></a-box> <!-- Left Leg -->
+            <a-box width="0.2" height="1.0" depth="0.2" position="0.2 0.5 0" color="#111"></a-box> <!-- Right Leg -->
+            <a-sphere radius="0.25" position="0 1.75 0" color="#e0ac69"></a-sphere> <!-- Head -->
+            <a-box width="0.1" height="0.8" depth="0.1" position="-0.4 1.1 0" color="#222"></a-box> <!-- Arms -->
+            <a-box width="0.1" height="0.8" depth="0.1" position="0.4 1.1 0" color="#222"></a-box>
+            <a-sphere radius="0.04" position="-0.1 1.8 0.22" color="red" material="emissive: red; emissiveIntensity: 2"></a-sphere>
+            <a-sphere radius="0.04" position="0.1 1.8 0.22" color="red" material="emissive: red; emissiveIntensity: 2"></a-sphere>
+        </a-entity>
+
         <!-- House Scene (Positioned far away, hidden initially) -->
         <a-entity id="house-scene" visible="false" position="1000 0 1000">
             <!-- Kidnapper in House (Standing) -->
@@ -308,6 +449,16 @@
                 <a-plane id="blackout" position="0 0 -0.1" width="1" height="1" 
                          material="color: #000; opacity: 0; transparent: true; shader: flat"
                          visible="true"></a-plane>
+                
+                <!-- Stone in Hand -->
+                <a-sphere id="player-stone" radius="0.1" position="0.3 -0.2 -0.4" color="#555" 
+                         material="roughness: 1; metalness: 0" visible="false"></a-sphere>
+                
+                <!-- Phone in Hand -->
+                <a-entity id="player-phone" visible="false" position="-0.3 -0.2 -0.3" rotation="0 15 0">
+                    <a-box width="0.1" height="0.2" depth="0.01" color="#000"></a-box>
+                    <a-plane width="0.08" height="0.18" position="0 0 0.006" color="#333" material="emissive: #6296c0; emissiveIntensity: 1"></a-plane>
+                </a-entity>
             </a-camera>
         </a-entity>
 
@@ -321,9 +472,33 @@
         <p id="kidnap-text">Something feels wrong...</p>
 
         <div id="choice-menu-html" class="choice-container" style="display: none;">
-            <button onclick="makeChoice(1)" class="choice-btn">1. Run</button>
-            <button onclick="makeChoice(2)" class="choice-btn">2. Walk Normally</button>
-            <button onclick="makeChoice(3)" class="choice-btn">3. Pick up a Weapon</button>
+            <button onclick="makeChoice(1, 1)" class="choice-btn">1. Run</button>
+            <button onclick="makeChoice(2, 1)" class="choice-btn">2. Walk Normally</button>
+            <button onclick="makeChoice(3, 1)" class="choice-btn">3. Pick up a Weapon</button>
+        </div>
+
+        <div id="choice-menu-phase2" class="choice-container" style="display: none;">
+            <button onclick="makeChoice(1, 2)" class="choice-btn">1. Msg a friend</button>
+            <button onclick="makeChoice(2, 2)" class="choice-btn">2. Share location with guardian</button>
+            <button onclick="makeChoice(3, 2)" class="choice-btn">3. Call police</button>
+        </div>
+
+        <div id="choice-menu-phase3" class="choice-container" style="display: none;">
+            <button onclick="makeChoice(1, 3)" class="choice-btn">1. Call a friend</button>
+            <button onclick="makeChoice(2, 3)" class="choice-btn">2. Stay on line with police and keep distance</button>
+            <button onclick="makeChoice(3, 3)" class="choice-btn">3. Walk silently</button>
+        </div>
+
+        <div id="choice-menu-phase4" class="choice-container" style="display: none;">
+            <button onclick="makeChoice(1, 4)" class="choice-btn">1. Wait for help</button>
+            <button onclick="makeChoice(2, 4)" class="choice-btn">2. Fight back with weapon</button>
+            <button onclick="makeChoice(3, 4)" class="choice-btn">3. Get beaten silently</button>
+        </div>
+
+        <div id="choice-menu-phase5" class="choice-container" style="display: none;">
+            <button onclick="makeChoice(1, 5)" class="choice-btn">1. Call someone else</button>
+            <button onclick="makeChoice(2, 5)" class="choice-btn">2. Panic</button>
+            <button onclick="makeChoice(3, 5)" class="choice-btn">3. Stay calm and run</button>
         </div>
     </div>
 
@@ -332,6 +507,39 @@
             <h1 class="death-title">DEAD</h1>
             <p id="death-explanation"></p>
             <button onclick="location.reload()" class="retry-btn">RETRY</button>
+        </div>
+    </div>
+
+    <div id="credits-overlay" class="fullscreen-overlay credits-bg">
+        <div class="credits-scroller">
+            <p class="motivational-quote">
+                Fear is a reaction, but survival is a choice. In the darkest moments, when the world feels small and the exit seems far, remember: you are the master of your own resolve. Do not let the shadows define your story. Stand your ground. Keep your eyes sharp, your heart steady, and your spirit loud. Your strength is greater than any lock, and your will is a force that cannot be contained.
+            </p>
+            
+            <div class="spacer">.</div>
+            <div class="spacer">.</div>
+            <div class="spacer">.</div>
+            <div class="spacer">.</div>
+            <div class="spacer">.</div>
+            
+            <div class="team-credits">
+                <h2 class="presented-by">PRESENTED BY</h2>
+                <h1 class="team-name">AURA RANGERS SPD</h1>
+                
+                <div class="credit-item">AMRIT <span class="role">(The Mechanic)</span></div>
+                <div class="credit-item">ADITI <span class="role">(The Chronicler)</span></div>
+                <div class="credit-item">TRISHA <span class="role">(The Landscaper)</span></div>
+                <div class="credit-item">SABYASACHI <span class="role">(The Intel Gatherer)</span></div>
+                <div class="credit-item">TANISHA <span class="role">(The Logician)</span></div>
+                <div class="credit-item">TOYANSHU <span class="role">(The Analyst)</span></div>
+                <div class="credit-item">SWAYAM <span class="role">(The Field Agent)</span></div>
+                <div class="credit-item">SANDIP <span class="role">(The Processor)</span></div>
+                <div class="credit-item">SHOUBHIT <span class="role">(The Silent Observer)</span></div>
+            </div>
+
+            <h1 class="the-end">THE END</h1>
+            <h2 style="color: #ff3b3b; font-size: 32px; letter-spacing: 5px; margin: 40px 0 100px 0; font-weight: 900;">SABDHAN RAHE, SATARK RAHE</h2>
+            <button onclick="location.reload()" class="retry-btn">PLAY AGAIN</button>
         </div>
     </div>
 </body>
